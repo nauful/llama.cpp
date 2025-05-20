@@ -1,16 +1,19 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, ClipboardEvent } from 'react';
 import { useAppContext } from '../utils/app.context';
-import { Message, PendingMessage } from '../utils/types';
+import { Message, MessageExtra, PendingMessage } from '../utils/types';
 import { classNames } from '../utils/misc';
 import MarkdownDisplay, { CopyButton } from './MarkdownDisplay';
 import {
   ArrowPathIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  PaperClipIcon,
   PencilSquareIcon,
 } from '@heroicons/react/24/outline';
 import ChatInputExtraContextItem from './ChatInputExtraContextItem';
 import { BtnWithTooltips } from '../utils/common';
+import Dropzone from 'react-dropzone';
+import { useChatExtraContext } from './useChatExtraContext';
 
 interface SplitMessage {
   content: PendingMessage['content'];
@@ -33,12 +36,18 @@ export default function ChatMessage({
   siblingCurrIdx: number;
   id?: string;
   onRegenerateMessage(msg: Message): void;
-  onEditMessage(msg: Message, content: string): void;
+  onEditMessage(
+    msg: Message,
+    content: string,
+    extra: MessageExtra[] | undefined
+  ): void;
   onChangeSibling(sibling: Message['id']): void;
   isPending?: boolean;
 }) {
   const { viewingChat, config } = useAppContext();
+  const extraContext = useChatExtraContext(msg.extra ?? []);
   const [editingContent, setEditingContent] = useState<string | null>(null);
+  const [isDrag, setIsDrag] = useState(false);
   const timings = useMemo(
     () =>
       msg.timings
@@ -107,36 +116,92 @@ export default function ChatMessage({
           className={classNames({
             'chat-bubble markdown': true,
             'chat-bubble bg-transparent': !isUser,
+            'opacity-50': isDrag, // simply visual feedback to inform user that the file will be accepted
           })}
         >
           {/* textarea for editing message */}
           {editingContent !== null && (
-            <>
-              <textarea
-                dir="auto"
-                className="textarea textarea-bordered bg-base-100 text-base-content max-w-2xl w-[calc(90vw-8em)] h-24"
-                value={editingContent}
-                onChange={(e) => setEditingContent(e.target.value)}
-              ></textarea>
-              <br />
-              <button
-                className="btn btn-ghost mt-2 mr-2"
-                onClick={() => setEditingContent(null)}
-              >
-                Cancel
-              </button>
-              <button
-                className="btn mt-2"
-                onClick={() => {
-                  if (msg.content !== null) {
-                    setEditingContent(null);
-                    onEditMessage(msg as Message, editingContent);
-                  }
-                }}
-              >
-                Submit
-              </button>
-            </>
+            <Dropzone
+              noClick
+              onDrop={(files: File[]) => {
+                setIsDrag(false);
+                extraContext.onFileAdded(files);
+              }}
+              onDragEnter={() => setIsDrag(true)}
+              onDragLeave={() => setIsDrag(false)}
+              multiple={true}
+            >
+              {({ getRootProps, getInputProps }) => (
+                <div
+                  className="flex flex-col w-full"
+                  onPasteCapture={(e: ClipboardEvent<HTMLInputElement>) => {
+                    const files = Array.from(e.clipboardData.items)
+                      .filter((item) => item.kind === 'file')
+                      .map((item) => item.getAsFile())
+                      .filter((file) => file !== null);
+
+                    if (files.length > 0) {
+                      e.preventDefault();
+                      extraContext.onFileAdded(files);
+                    }
+                  }}
+                  {...getRootProps()}
+                >
+                  <ChatInputExtraContextItem
+                    items={extraContext.items}
+                    removeItem={extraContext.removeItem}
+                  />
+
+                  <div className="flex flex-row gap-2 ml-2">
+                    <textarea
+                      dir="auto"
+                      className="textarea textarea-bordered bg-base-100 text-base-content max-w-2xl w-[calc(90vw-8em)] h-24"
+                      value={editingContent}
+                      onChange={(e) => setEditingContent(e.target.value)}
+                    />
+                    <label
+                      htmlFor="file-upload"
+                      className={classNames({
+                        'btn w-8 h-8 p-0 rounded-full': true,
+                      })}
+                    >
+                      <PaperClipIcon className="h-5 w-5" />
+                    </label>
+                    <input
+                      id="file-upload"
+                      type="file"
+                      className="hidden"
+                      {...getInputProps()}
+                      hidden
+                    />
+                  </div>
+
+                  <div className="flex flex-row gap-2 ml-2">
+                    <button
+                      className="btn btn-ghost mt-2 mr-2"
+                      onClick={() => setEditingContent(null)}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      className="btn mt-2"
+                      onClick={() => {
+                        if (msg.content !== null) {
+                          setEditingContent(null);
+                          onEditMessage(
+                            msg as Message,
+                            editingContent,
+                            extraContext.items
+                          );
+                        }
+                      }}
+                    >
+                      Submit
+                    </button>
+                  </div>
+                </div>
+              )}
+            </Dropzone>
           )}
           {/* not editing content, render message */}
           {editingContent === null && (

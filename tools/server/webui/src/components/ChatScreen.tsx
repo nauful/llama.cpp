@@ -1,7 +1,12 @@
 import { ClipboardEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { CallbackGeneratedChunk, useAppContext } from '../utils/app.context';
 import ChatMessage from './ChatMessage';
-import { CanvasType, Message, PendingMessage } from '../utils/types';
+import {
+  CanvasType,
+  Message,
+  MessageExtra,
+  PendingMessage,
+} from '../utils/types';
 import { classNames, cleanCurrentUrl } from '../utils/misc';
 import CanvasPyInterpreter from './CanvasPyInterpreter';
 import StorageUtils from '../utils/storage';
@@ -158,7 +163,11 @@ export default function ChatScreen() {
   // for vscode context
   textarea.refOnSubmit.current = sendNewMessage;
 
-  const handleEditMessage = async (msg: Message, content: string) => {
+  const handleEditMessage = async (
+    msg: Message,
+    content: string,
+    extra: MessageExtra[] | undefined
+  ) => {
     if (!viewingChat) return;
     setCurrNodeId(msg.id);
     scrollToBottom(false);
@@ -166,7 +175,7 @@ export default function ChatScreen() {
       viewingChat.conv.id,
       msg.parent,
       content,
-      msg.extra,
+      extra,
       onChunk
     );
     setCurrNodeId(-1);
