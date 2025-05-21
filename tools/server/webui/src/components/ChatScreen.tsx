@@ -447,7 +447,7 @@ export function ChatInput({
 
                 {!canCancel && isGenerating && (
                   <button
-                    className="btn btn-neutral ml-2-full"
+                    className="btn btn-neutral w-8 h-8 p-0 rounded-full"
                     onClick={onStop}
                   >
                     <StopIcon className="h-5 w-5" />
@@ -456,7 +456,7 @@ export function ChatInput({
 
                 {!canCancel && !isGenerating && (
                   <button
-                    className="btn btn-primary ml-2 h-full"
+                    className="btn btn-primary w-8 h-8 p-0 rounded-full"
                     onClick={onSend}
                   >
                     <ArrowUpIcon className="h-5 w-5" />
