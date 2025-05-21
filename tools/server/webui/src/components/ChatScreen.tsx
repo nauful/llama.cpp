@@ -216,13 +216,13 @@ export default function ChatScreen() {
   const pendingMsgDisplay: MessageDisplay[] =
     pendingMsg && messages.at(-1)?.msg.id !== pendingMsg.id
       ? [
-          {
-            msg: pendingMsg,
-            siblingLeafNodeIds: [],
-            siblingCurrIdx: 0,
-            isPending: true,
-          },
-        ]
+        {
+          msg: pendingMsg,
+          siblingLeafNodeIds: [],
+          siblingCurrIdx: 0,
+          isPending: true,
+        },
+      ]
       : [];
 
   return (
@@ -306,18 +306,20 @@ function ServerInfo() {
   );
 }
 
-function ChatInput({
+export function ChatInput({
   textarea,
   extraContext,
   onSend,
   onStop,
   isGenerating,
+  canCancel,
 }: {
   textarea: ChatTextareaApi;
   extraContext: ChatExtraContextApi;
   onSend: () => void;
   onStop: () => void;
-  isGenerating: boolean;
+  isGenerating?: boolean;
+  canCancel?: boolean,
 }) {
   const { config } = useAppContext();
   const [isDrag, setIsDrag] = useState(false);
@@ -413,7 +415,7 @@ function ChatInput({
                   htmlFor="file-upload"
                   className={classNames({
                     'btn w-8 h-8 p-0 rounded-full': true,
-                    'btn-disabled': isGenerating,
+                    'btn-disabled': isGenerating ?? false,
                   })}
                   aria-label="Upload file"
                   tabIndex={0}
@@ -428,22 +430,33 @@ function ChatInput({
                   {...getInputProps()}
                   hidden
                 />
-                {isGenerating ? (
+
+                {canCancel && <>
                   <button
-                    className="btn btn-neutral w-8 h-8 p-0 rounded-full"
-                    onClick={onStop}
-                  >
-                    <StopIcon className="h-5 w-5" />
+                    className="btn btn-primary mt-2"
+                    onClick={onSend}>
+                    Submit
                   </button>
-                ) : (
                   <button
-                    className="btn btn-primary w-8 h-8 p-0 rounded-full"
-                    onClick={onSend}
-                    aria-label="Send message"
-                  >
-                    <ArrowUpIcon className="h-5 w-5" />
+                    className="btn btn-neutral mt-2 mr-2"
+                    onClick={onStop}>
+                    Cancel
                   </button>
-                )}
+                </>}
+
+                {!canCancel && isGenerating && <button
+                  className="btn btn-neutral ml-2-full"
+                  onClick={onStop}
+                >
+                  <StopIcon className="h-5 w-5" />
+                </button>}
+
+                {!canCancel && !isGenerating && <button
+                  className="btn btn-primary ml-2 h-full"
+                  onClick={onSend}
+                >
+                  <ArrowUpIcon className="h-5 w-5" />
+                </button>}
               </div>
             </div>
           </div>

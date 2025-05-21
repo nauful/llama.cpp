@@ -14,6 +14,8 @@ import ChatInputExtraContextItem from './ChatInputExtraContextItem';
 import { BtnWithTooltips } from '../utils/common';
 import Dropzone from 'react-dropzone';
 import { useChatExtraContext } from './useChatExtraContext';
+import { ChatTextareaApi, useChatTextarea } from './useChatTextarea';
+import { ChatInput } from './ChatScreen';
 
 interface SplitMessage {
   content: PendingMessage['content'];
@@ -46,18 +48,18 @@ export default function ChatMessage({
 }) {
   const { viewingChat, config } = useAppContext();
   const extraContext = useChatExtraContext(msg.extra ?? []);
+  const textarea: ChatTextareaApi = useChatTextarea('');
   const [editingContent, setEditingContent] = useState<string | null>(null);
-  const [isDrag, setIsDrag] = useState(false);
   const timings = useMemo(
     () =>
       msg.timings
         ? {
-            ...msg.timings,
-            prompt_per_second:
-              (msg.timings.prompt_n / msg.timings.prompt_ms) * 1000,
-            predicted_per_second:
-              (msg.timings.predicted_n / msg.timings.predicted_ms) * 1000,
-          }
+          ...msg.timings,
+          prompt_per_second:
+            (msg.timings.prompt_n / msg.timings.prompt_ms) * 1000,
+          predicted_per_second:
+            (msg.timings.predicted_n / msg.timings.predicted_ms) * 1000,
+        }
         : null,
     [msg.timings]
   );
@@ -108,101 +110,35 @@ export default function ChatMessage({
           'chat-end': isUser,
         })}
       >
-        {msg.extra && msg.extra.length > 0 && (
+        {msg.extra && msg.extra.length > 0 && editingContent === null && (
           <ChatInputExtraContextItem items={msg.extra} clickToShow />
         )}
 
         <div
           className={classNames({
-            'chat-bubble markdown': true,
+            "chat-bubble markdown": editingContent === null,
+            "w-full": editingContent !== null,
             'chat-bubble bg-transparent': !isUser,
-            'opacity-50': isDrag, // simply visual feedback to inform user that the file will be accepted
           })}
         >
           {/* textarea for editing message */}
-          {editingContent !== null && (
-            <Dropzone
-              noClick
-              onDrop={(files: File[]) => {
-                setIsDrag(false);
-                extraContext.onFileAdded(files);
-              }}
-              onDragEnter={() => setIsDrag(true)}
-              onDragLeave={() => setIsDrag(false)}
-              multiple={true}
-            >
-              {({ getRootProps, getInputProps }) => (
-                <div
-                  className="flex flex-col w-full"
-                  onPasteCapture={(e: ClipboardEvent<HTMLInputElement>) => {
-                    const files = Array.from(e.clipboardData.items)
-                      .filter((item) => item.kind === 'file')
-                      .map((item) => item.getAsFile())
-                      .filter((file) => file !== null);
+          {editingContent !== null && <ChatInput
+            textarea={textarea}
+            extraContext={extraContext}
+            onSend={() => {
+              if (msg.content !== null) {
+                setEditingContent(null);
+                onEditMessage(
+                  msg as Message,
+                  textarea.value(),
+                  extraContext.items,
+                );
+              }
+            }}
+            onStop={() => setEditingContent(null)}
+            canCancel
+          />}
 
-                    if (files.length > 0) {
-                      e.preventDefault();
-                      extraContext.onFileAdded(files);
-                    }
-                  }}
-                  {...getRootProps()}
-                >
-                  <ChatInputExtraContextItem
-                    items={extraContext.items}
-                    removeItem={extraContext.removeItem}
-                  />
-
-                  <div className="flex flex-row gap-2 ml-2">
-                    <textarea
-                      dir="auto"
-                      className="textarea textarea-bordered bg-base-100 text-base-content max-w-2xl w-[calc(90vw-8em)] h-24"
-                      value={editingContent}
-                      onChange={(e) => setEditingContent(e.target.value)}
-                    />
-                    <label
-                      htmlFor="file-upload"
-                      className={classNames({
-                        'btn w-8 h-8 p-0 rounded-full': true,
-                      })}
-                    >
-                      <PaperClipIcon className="h-5 w-5" />
-                    </label>
-                    <input
-                      id="file-upload"
-                      type="file"
-                      className="hidden"
-                      {...getInputProps()}
-                      hidden
-                    />
-                  </div>
-
-                  <div className="flex flex-row gap-2 ml-2">
-                    <button
-                      className="btn btn-ghost mt-2 mr-2"
-                      onClick={() => setEditingContent(null)}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      className="btn mt-2"
-                      onClick={() => {
-                        if (msg.content !== null) {
-                          setEditingContent(null);
-                          onEditMessage(
-                            msg as Message,
-                            editingContent,
-                            extraContext.items
-                          );
-                        }
-                      }}
-                    >
-                      Submit
-                    </button>
-                  </div>
-                </div>
-              )}
-            </Dropzone>
-          )}
           {/* not editing content, render message */}
           {editingContent === null && (
             <>
@@ -302,7 +238,13 @@ export default function ChatMessage({
           {msg.role === 'user' && (
             <BtnWithTooltips
               className="btn-mini w-8 h-8"
-              onClick={() => setEditingContent(msg.content)}
+              onClick={() => {
+                setEditingContent(msg.content);
+                // Ensure textarea gets the value after setting editing state
+                setTimeout(() => {
+                  textarea.setValue(msg.content || '');
+                }, 0);
+              }}
               disabled={msg.content === null}
               tooltipsContent="Edit message"
             >
