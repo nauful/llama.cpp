@@ -1,4 +1,4 @@
-import { useMemo, useState, ClipboardEvent } from 'react';
+import { useMemo, useState } from 'react';
 import { useAppContext } from '../utils/app.context';
 import { Message, MessageExtra, PendingMessage } from '../utils/types';
 import { classNames } from '../utils/misc';
@@ -7,12 +7,10 @@ import {
   ArrowPathIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  PaperClipIcon,
   PencilSquareIcon,
 } from '@heroicons/react/24/outline';
 import ChatInputExtraContextItem from './ChatInputExtraContextItem';
 import { BtnWithTooltips } from '../utils/common';
-import Dropzone from 'react-dropzone';
 import { useChatExtraContext } from './useChatExtraContext';
 import { ChatTextareaApi, useChatTextarea } from './useChatTextarea';
 import { ChatInput } from './ChatScreen';
@@ -54,12 +52,12 @@ export default function ChatMessage({
     () =>
       msg.timings
         ? {
-          ...msg.timings,
-          prompt_per_second:
-            (msg.timings.prompt_n / msg.timings.prompt_ms) * 1000,
-          predicted_per_second:
-            (msg.timings.predicted_n / msg.timings.predicted_ms) * 1000,
-        }
+            ...msg.timings,
+            prompt_per_second:
+              (msg.timings.prompt_n / msg.timings.prompt_ms) * 1000,
+            predicted_per_second:
+              (msg.timings.predicted_n / msg.timings.predicted_ms) * 1000,
+          }
         : null,
     [msg.timings]
   );
@@ -116,28 +114,30 @@ export default function ChatMessage({
 
         <div
           className={classNames({
-            "chat-bubble markdown": editingContent === null,
-            "w-full": editingContent !== null,
+            'chat-bubble markdown': editingContent === null,
+            'w-full': editingContent !== null,
             'chat-bubble bg-transparent': !isUser,
           })}
         >
           {/* textarea for editing message */}
-          {editingContent !== null && <ChatInput
-            textarea={textarea}
-            extraContext={extraContext}
-            onSend={() => {
-              if (msg.content !== null) {
-                setEditingContent(null);
-                onEditMessage(
-                  msg as Message,
-                  textarea.value(),
-                  extraContext.items,
-                );
-              }
-            }}
-            onStop={() => setEditingContent(null)}
-            canCancel
-          />}
+          {editingContent !== null && (
+            <ChatInput
+              textarea={textarea}
+              extraContext={extraContext}
+              onSend={() => {
+                if (msg.content !== null) {
+                  setEditingContent(null);
+                  onEditMessage(
+                    msg as Message,
+                    textarea.value(),
+                    extraContext.items
+                  );
+                }
+              }}
+              onStop={() => setEditingContent(null)}
+              canCancel
+            />
+          )}
 
           {/* not editing content, render message */}
           {editingContent === null && (

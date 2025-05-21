@@ -216,13 +216,13 @@ export default function ChatScreen() {
   const pendingMsgDisplay: MessageDisplay[] =
     pendingMsg && messages.at(-1)?.msg.id !== pendingMsg.id
       ? [
-        {
-          msg: pendingMsg,
-          siblingLeafNodeIds: [],
-          siblingCurrIdx: 0,
-          isPending: true,
-        },
-      ]
+          {
+            msg: pendingMsg,
+            siblingLeafNodeIds: [],
+            siblingCurrIdx: 0,
+            isPending: true,
+          },
+        ]
       : [];
 
   return (
@@ -319,7 +319,7 @@ export function ChatInput({
   onSend: () => void;
   onStop: () => void;
   isGenerating?: boolean;
-  canCancel?: boolean,
+  canCancel?: boolean;
 }) {
   const { config } = useAppContext();
   const [isDrag, setIsDrag] = useState(false);
@@ -431,32 +431,37 @@ export function ChatInput({
                   hidden
                 />
 
-                {canCancel && <>
-                  <button
-                    className="btn btn-primary mt-2"
-                    onClick={onSend}>
-                    Submit
-                  </button>
-                  <button
-                    className="btn btn-neutral mt-2 mr-2"
-                    onClick={onStop}>
-                    Cancel
-                  </button>
-                </>}
+                {canCancel && (
+                  <>
+                    <button className="btn btn-primary mt-2" onClick={onSend}>
+                      Submit
+                    </button>
+                    <button
+                      className="btn btn-neutral mt-2 mr-2"
+                      onClick={onStop}
+                    >
+                      Cancel
+                    </button>
+                  </>
+                )}
 
-                {!canCancel && isGenerating && <button
-                  className="btn btn-neutral ml-2-full"
-                  onClick={onStop}
-                >
-                  <StopIcon className="h-5 w-5" />
-                </button>}
+                {!canCancel && isGenerating && (
+                  <button
+                    className="btn btn-neutral ml-2-full"
+                    onClick={onStop}
+                  >
+                    <StopIcon className="h-5 w-5" />
+                  </button>
+                )}
 
-                {!canCancel && !isGenerating && <button
-                  className="btn btn-primary ml-2 h-full"
-                  onClick={onSend}
-                >
-                  <ArrowUpIcon className="h-5 w-5" />
-                </button>}
+                {!canCancel && !isGenerating && (
+                  <button
+                    className="btn btn-primary ml-2 h-full"
+                    onClick={onSend}
+                  >
+                    <ArrowUpIcon className="h-5 w-5" />
+                  </button>
+                )}
               </div>
             </div>
           </div>
